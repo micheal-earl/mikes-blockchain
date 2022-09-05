@@ -5,30 +5,43 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
 type Block struct {
-	nonce     uint32
-	timestamp time.Time
-	payload   TransactionList
-	hash      []byte
-	prevHash  []byte
+	Nonce     int            `json:"nonce"`
+	Timestamp string         `json:"timestamp"`
+	Payload   []*Transaction `json:"payload"`
+	Hash      string         `json:"hash"`
+	PrevHash  string         `json:"prevHash"`
 }
 
-func NewBlock(_payload TransactionList, _prevHash []byte) *Block {
+func NewBlock(_payload []*Transaction, _prevHash string) *Block {
 	return &Block{
-		timestamp: time.Now(),
-		payload:   _payload,
-		prevHash:  _prevHash,
+		Timestamp: time.Now().String(),
+		Payload:   _payload,
+		PrevHash:  _prevHash,
 	}
 }
 
-func (b *Block) HashBlock(_nonce uint32) {
-	b.nonce = _nonce
+func (b *Block) HashBlock(_nonce int) {
+	b.Nonce = _nonce
+
+	// Payload to []byte
 	encodedPayload := new(bytes.Buffer)
-	json.NewEncoder(encodedPayload).Encode(b.payload)
-	binary.LittleEndian.AppendUint32(encodedPayload.Bytes(), b.nonce)
-	hash := sha256.Sum256(append(b.prevHash, encodedPayload.Bytes()...))
-	b.hash = hash[:]
+	json.NewEncoder(encodedPayload).Encode(b.Payload)
+
+	// PrevHash to []byte
+	encodedPrevHash := []byte(b.PrevHash)
+
+	// Append nonce to encodedPayload
+	binary.LittleEndian.AppendUint64(encodedPayload.Bytes(), uint64(b.Nonce))
+
+	// Calculate hash with sha256
+	hash := sha256.Sum256(append(encodedPrevHash, encodedPayload.Bytes()...))
+
+	fmt.Println(string(hash[:]))
+
+	b.Hash = string(hash[:])
 }
